@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChipInBro - Receipt</title>
+  <meta name="description" content="View and print your expense receipt. Privacy-first expense splitting.">
+  <meta name="author" content="NoAiStudio">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://chipinbro.com/receipt.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ChipInBro - Receipt">
+  <meta property="og:description" content="View and print your expense receipt. Privacy-first expense splitting.">
+  <meta property="og:url" content="https://chipinbro.com/receipt.html">
+  <meta property="og:image" content="https://chipinbro.com/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ChipInBro - Receipt">
+  <meta name="twitter:description" content="View and print your expense receipt. Privacy-first expense splitting.">
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ChipInBro",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "description": "Privacy-first expense splitting web app. View and print receipts - no accounts, no tracking, no backend.",
+    "author": {
+      "@type": "Organization",
+      "name": "NoAiStudio"
+    },
+    "url": "https://chipinbro.com/receipt.html",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom CSS for RTL and print -->
+  <style>
+    [dir="rtl"] .rtl-flip { transform: scaleX(-1); }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .receipt-card { box-shadow: none !important; border: 2px solid #000 !important; }
+      .print-break { page-break-inside: avoid; }
+    }
+    .receipt-card {
+      font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .receipt-border {
+      border: 3px solid #e2e8f0;
+      border-radius: 12px;
+      position: relative;
+    }
+    .receipt-border::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+      border-radius: 12px;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-8">
+  <div class="container mx-auto px-4 max-w-2xl">
+    <!-- Loading State -->
+    <div id="loadingState" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-gray-600" data-i18n="loading">Loading...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center hidden">
+      <div class="text-red-600 mb-4">
+        <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2" data-i18n="error">Error</h2>
+      <p id="errorMessage" class="text-gray-600 mb-6"></p>
+      <a href="index.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <svg class="w-4 h-4 mr-2 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <span data-i18n="error_return_home">Return to Home</span>
+      </a>
+    </div>
+
+    <!-- Receipt Content -->
+    <div id="receiptContent" class="hidden">
+      <!-- Receipt Card -->
+      <div class="receipt-card receipt-border p-8 mb-6 print-break">
+        <!-- Header -->
+        <div class="text-center mb-6 pb-4 border-b-2 border-dashed border-gray-400">
+          <h1 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="receipt_title_text">Receipt</h1>
+          <div class="text-sm text-gray-600">
+            <span data-i18n="receipt_date">Date</span>: <span id="receiptDate"></span>
+          </div>
+        </div>
+
+        <!-- Receipt Details -->
+        <div class="space-y-4 mb-6">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium" data-i18n="receipt_title_text">Title:</span>
+            <span id="receiptTitle" class="text-gray-900 font-semibold"></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium" data-i18n="receipt_paid_by">Paid by:</span>
+            <span id="receiptPaidBy" class="text-gray-900 font-semibold"></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium" data-i18n="receipt_currency">Currency:</span>
+            <span id="receiptCurrency" class="text-gray-900 font-semibold"></span>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="border-t border-b border-dashed border-gray-400 py-4 mb-6">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-sm">
+              <span data-i18n="base_amount">Base Amount</span>
+              <span id="baseAmount" class="font-mono"></span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <span data-i18n="tax_amount">Tax Amount</span>
+              <span id="taxAmount" class="font-mono"></span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <span data-i18n="tip_amount">Tip Amount</span>
+              <span id="tipAmount" class="font-mono"></span>
+            </div>
+            <div class="flex justify-between items-center text-lg font-bold border-t border-gray-300 pt-2 mt-2">
+              <span data-i18n="final_total">Final Total</span>
+              <span id="finalTotal" class="font-mono"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Participants -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center" data-i18n="participants">Participants</h3>
+          <div id="participantsList" class="space-y-3">
+            <!-- Participant items will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div id="noteSection" class="border-t border-dashed border-gray-400 pt-4 hidden">
+          <div class="text-sm">
+            <div class="font-medium text-gray-700 mb-2" data-i18n="note">Note:</div>
+            <div id="receiptNote" class="text-gray-800 whitespace-pre-wrap"></div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 pt-4 border-t border-dashed border-gray-400">
+          <div class="text-xs text-gray-500">
+            Generated by ChipInBro • Privacy-first expense splitting
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex space-x-4 rtl:space-x-reverse no-print">
+        <button id="printBtn"
+                class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <svg class="w-4 h-4 mr-2 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          <span data-i18n="print">Print</span>
+        </button>
+
+        <a href="index.html"
+           class="flex-1 flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <svg class="w-4 h-4 mr-2 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <span data-i18n="new_receipt">New Receipt</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-12 text-sm text-gray-500 no-print">
+      <p>Developed by <a href="#" class="text-blue-600 hover:text-blue-800">NoAiStudio</a></p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      App.initReceiptPage();
+    });
+  </script>
+</body>
+</html>
