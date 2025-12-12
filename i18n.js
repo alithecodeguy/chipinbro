@@ -37,15 +37,39 @@ const i18n = {
     return lang;
   },
 
-  // Base64 URL-safe encoding/decoding utilities
+  // Base64 URL-safe encoding/decoding utilities with UTF-8 support
   base64UrlEncode: function (str) {
-    return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    // Handle UTF-8 properly by using encodeURIComponent + unescape
+    try {
+      return btoa(unescape(encodeURIComponent(str)))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
+    } catch (e) {
+      // Fallback: try direct encoding (will fail for non-ASCII)
+      return btoa(str)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
+    }
   },
 
   base64UrlDecode: function (str) {
-    str = str.replace(/-/g, "+").replace(/_/g, "/");
-    while (str.length % 4) str += "=";
-    return atob(str);
+    try {
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (str.length % 4) str += "=";
+      const decoded = atob(str);
+      // Try to decode as UTF-8
+      try {
+        return decodeURIComponent(escape(decoded));
+      } catch (e) {
+        // If UTF-8 decoding fails, return as-is
+        return decoded;
+      }
+    } catch (e) {
+      console.error("Base64 decode error:", e);
+      throw new Error("Invalid base64 data");
+    }
   },
 
   // Translation strings

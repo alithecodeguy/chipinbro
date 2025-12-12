@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test UTF-8 Encoding</title>
+</head>
+<body>
+  <h1>UTF-8 Encoding Test</h1>
+  <div id="test-results"></div>
+
+  <script src="i18n.js"></script>
+  <script>
+    function runTest() {
+      const results = document.getElementById('test-results');
+      const testCases = [
+        'Hello World',
+        'رسید شام در رستوران',
+        'مرحبا بالعالم',
+        'Hello 世界',
+        'Test with special chars: àáâãäå æçèéêë ìíîï ðñòóôõö ÷øùúûü ýþÿ',
+        'Numbers: 1234567890',
+        'Symbols: !@#$%^&*()_+-=[]{}|;:,.<>?'
+      ];
+
+      let html = '<h2>Test Results:</h2>';
+
+      testCases.forEach((testString, index) => {
+        try {
+          const encoded = i18n.base64UrlEncode(testString);
+          const decoded = i18n.base64UrlDecode(encoded);
+          const passed = testString === decoded;
+
+          html += `
+            <div style="margin: 10px 0; padding: 10px; border: 1px solid ${passed ? 'green' : 'red'}; background: ${passed ? '#f0fff0' : '#fff0f0'}">
+              <strong>Test ${index + 1}:</strong> ${passed ? 'PASS' : 'FAIL'}<br>
+              <strong>Original:</strong> ${testString}<br>
+              <strong>Encoded:</strong> ${encoded}<br>
+              <strong>Decoded:</strong> ${decoded}<br>
+            </div>
+          `;
+        } catch (error) {
+          html += `
+            <div style="margin: 10px 0; padding: 10px; border: 1px solid red; background: #fff0f0">
+              <strong>Test ${index + 1}:</strong> ERROR<br>
+              <strong>Original:</strong> ${testString}<br>
+              <strong>Error:</strong> ${error.message}<br>
+            </div>
+          `;
+        }
+      });
+
+      results.innerHTML = html;
+    }
+
+    // Run test when page loads
+    window.addEventListener('DOMContentLoaded', runTest);
+  </script>
+</body>
+</html>
